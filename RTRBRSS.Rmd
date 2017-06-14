@@ -1,0 +1,117 @@
+---
+title: "R Notebook"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+#Reading and Tidying Data
+```{r}
+#load pacakges
+library(haven); library(tidyverse)
+
+az.brfss <- read_sas("./arizona.sas7bdat") #reads data set
+
+#define value labels
+labs.age = c("Age 18 - 24", "Age 25 to 34", "Age 35 to 44",
+             "Age 45 to 54", "Age 55 to 64", "Age 65 or older")
+
+labs.bp = c("Yes","No")
+
+labs.edu = c("Did not graduate High School", "Graduated High School",
+             "Attended College or Technical School",
+             "Graduated from College or Technical School")
+
+labs.genhealth = c("Excellent", "Very good", "Good", "Fair", "Poor")
+
+labs.health = c("Good", "Poor")
+
+labs.hvydrink = c("Not at risk", "At risk")
+
+labs.inc = c("Less than $15,000", "$15,000 to less than $25,000",
+             "$25,000 to less than $35,000", "$35,000 to less than $50,000",
+             "$50,000 or more")
+
+labs.hlthdays = c("None", "1 - 13 days", "14 or more days")
+	
+labs.race2fmt = c("White only, non-Hispanic", "Black only, non-Hispanic",
+                  "Asian only, non-Hispanic", 
+                  "Native Hawaiian or other Pacific Islander only, No",
+                  "American Indian or Alaskan Native only, Non-Hispan",
+                  "Other race only, non-Hispanic",
+                  "Multiracial, non-Hispanic",
+                  "Hispanic", "Don't know/Not sure/Refused")
+
+labs.region = c("South", "Northeast", "Midwest", "Southwest", "West")
+
+
+labs.rr2atwrk = c("Worse than other races", "The same as other races",
+                  "Better than other races", 
+                  "Worse than some races, better than others",
+                  "Only encountered people of the same race")
+
+labs.rr2cognt = c("Never", "Once a year", "Once a month", "Once a week",
+                  "Once a day", "Once an hour", "Constantly")
+
+labs.rr2yesno = c("Yes", "No", "Don't know/Not Sure", "Refused")
+
+labs.rr3hcare = c("Worse than other races", "The same as other races",
+                  "Better than other races", 
+                  "Worse than some races, better than others",
+                  "Only encountered people of the same race",
+                  "No health care in past 12 months") 
+
+labs.rrclass = c("White", "Black or African American", "Hispanic or Latino",
+                 "Asian", "Native Hawaiian or Other Pacific Islander",
+                 "American Indian or Alaska Native", "Some Other Group")
+
+labs.sex = c("Male", "Female")
+
+labs.smoker = c("Current smoker", "Former smoker", "Never smoked") 
+
+#format variables and assign value labels
+
+az.brfss <- az.brfss %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
+                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
+                                bp_high=factor(bphigh4, labels=labs.bp),
+                                educ=factor(`_EDUCAG`, labels=labs.edu),
+                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
+                                income=factor(`_INCOMG`, labels=labs.inc),
+                                ment_days=factor(mentdays, labels=labs.hlthdays),
+                                phys_days=factor(physdays, labels=labs.hlthdays),
+                                race=factor(RACE2, labels=labs.race2fmt),
+                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
+                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
+                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
+                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
+                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
+                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
+                                sex=factor(SEX, labels=labs.sex),
+                                smoker=factor(smoker, labels=labs.smoker),
+                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
+                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_finalwt`),
+                                year=as.factor(iyearc), 
+                                region=as.character(region)) %>%
+      rownames_to_column(var="ID") %>%
+      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
+             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
+             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
+             alc_consum, wt)
+
+#check variables and 5 first and last rows
+str(az.brfss)
+head(az.brfss, n=5)
+tail(az.brfss, n=5)
+```
+
+Descriptive Data
+```{r}
+library(tableone)
+
+demographics <- c("sex", "age_gr", "educ", "income")
+demo_table <- CreateCatTable(demographics, strata="year", data=az.brfss, test=F)
+
+
+
+```
+
