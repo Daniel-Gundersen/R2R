@@ -5,10 +5,6 @@ output:
   html_notebook: default
 ---
 
-```{r, echo=FALSE}
-options(width = 100)
-```
-
 #Reading and Tidying Data
 ```{r, message=FALSE, warning=FALSE}
 #load pacakges
@@ -18,6 +14,16 @@ setwd("C:/Users/Daniel/Desktop/Konsulentarbeid/R2R/By_State")
 #reads data sets by state
 temp = list.files(pattern="*.sas7bdat")
 for (i in 1:length(temp)) assign(temp[i], read_sas(temp[i]))
+
+#make variable names consistent across data frames (states)
+dfs <- mget(temp)
+
+for (i in 1:length(dfs)) {
+      cnames <- tolower(colnames(dfs[[i]]))
+      colnames(dfs[[i]]) <- cnames
+}
+
+brfss.all <- bind_rows(dfs)
 
 #define value labels
 labs.age = c("Age 18 - 24", "Age 25 to 34", "Age 35 to 44",
@@ -81,512 +87,28 @@ labs.sex = c("Male", "Female")
 labs.smoker = c("Current smoker", "Former smoker", "Never smoked") 
 labs.smoker2 = c("Current smoker", "Former smoker", "Never smoked", "DK") 
 
-#format variables and assign value labels
-##Arizona
-az <- arizona.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                bp_high=factor(bphigh4, labels=labs.bp),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
+##Assign values labels to values across all data frames (states)
+brfss.all <- brfss.all %>% mutate(age_gr=factor(`_age_g`, labels=labs.age),
+                                gen_health=ordered(genhlth, labels=labs.genhealth),
+                                educ=factor(`_educag`, labels=labs.edu),
                                 hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_finalwt`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Colorado
-co <- colorado.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno2),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno2),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##District of Columbia
-dc <- dc.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno2),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno2),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(rratwrk2),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Delaware
-de <- delaware.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                bp_high=factor(bphigh4, labels=labs.bp),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno2),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno2),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass2),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-#Georgia
-ga <- georgia.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Indiana
-ind <- indiana.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                bp_high=factor(BPHIGH4, labels=labs.bp),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Kentucky
-ke <- kentucky.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Michigan
-mi <- michigan.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno2),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno2),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Minnesota
-mn <- minnesota.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
+                                income=factor(`_incomg`, labels=labs.inc),
                                 ment_days=factor(mentdays, labels=labs.hlthdays),
                                 phys_days=factor(physdays, labels=labs.hlthdays),
                                 race=factor(race2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_finalwt`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Mississippi
-ms <- mississippi.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
                                 rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
+                                rr_cognitive=factor(rrcognt2, labels=labs.rr2cognt),
                                 rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno),
                                 rr_physympt=factor(rrphysm2, labels=labs.rr2yesno),
                                 rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker2),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Nebraska
-ne <- nebraska.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                bp_high=factor(BPHIGH4, labels=labs.bp),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
+                                rr_assignedrace=factor(rrclass2, labels=labs.rrclass),
+                                sex=factor(sex, labels=labs.sex),
                                 smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##New Mexico
-nm <- new_mexico.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(race2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
+                                state=as.character(`_state`), psu=`_psu`,
                                 alc_consum=as.numeric(alcpmo), wt=as.numeric(`_finalwt`),
                                 year=as.factor(iyearc), 
                                 region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Ohio
-oh <- ohio.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                bp_high=factor(BPHIGH4, labels=labs.bp),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno2),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno2),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Rhode Island
-ri <- rhode_island.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                bp_high=factor(bphigh4, labels=labs.bp),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker2),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##South Carolina
-sc <- s_carolina.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno2),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno2),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata) 
-
-##Virginia (note: bphigh4 missing)
-va <- virginia.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Wisconsin
-wi <- wisconsin.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                bp_high=factor(bphigh4, labels=labs.bp),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(rratwrk2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(rremtsm2, labels=labs.rr2yesno2),
-                                rr_physympt=factor(rrphysm2, labels=labs.rr2yesno2),
-                                rr_hcare=factor(rrhcare3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_FINALWT`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
-      rownames_to_column(var="ID") %>%
-      select(ID, age_gr, gen_health, bp_high, educ, hvy_drink, income, 
-             ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
-             rr_physympt, rr_hcare, rr_assignedrace, sex, smoker, year, state, region,
-             alc_consum, wt, strata)
-
-##Wyoming
-wy <- wyoming.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
-                                gen_health=ordered(GENHLTH, labels=labs.genhealth),
-                                educ=factor(`_EDUCAG`, labels=labs.edu),
-                                hvy_drink=factor(hvydrink, labels=labs.hvydrink),
-                                income=factor(`_INCOMG`, labels=labs.inc),
-                                ment_days=factor(mentdays, labels=labs.hlthdays),
-                                phys_days=factor(physdays, labels=labs.hlthdays),
-                                race=factor(RACE2, labels=labs.race2fmt),
-                                rr_atwork=factor(RRATWRK2, labels=labs.rr2atwrk),
-                                rr_cognitive=factor(RRCOGNT2, labels=labs.rr2cognt),
-                                rr_emptsympt=factor(RREMTSM2, labels=labs.rr2yesno),
-                                rr_physympt=factor(RRPHYSM2, labels=labs.rr2yesno),
-                                rr_hcare=factor(RRHCARE3, labels=labs.rr3hcare),
-                                rr_assignedrace=factor(RRCLASS2, labels=labs.rrclass),
-                                sex=factor(SEX, labels=labs.sex),
-                                smoker=factor(smoker, labels=labs.smoker),
-                                state=as.character(`_STATE`), psu=`_PSU`, strata=`_STSTR`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_finalwt`),
-                                year=as.factor(iyearc), 
-                                region=as.character(region),
-                                strata=as.factor(`_STSTR`)) %>%
+                                strata=as.factor(`_ststr`)) %>%
       rownames_to_column(var="ID") %>%
       select(ID, age_gr, gen_health, educ, hvy_drink, income, 
              ment_days, phys_days, race, rr_atwork, rr_cognitive, rr_emptsympt,
@@ -594,155 +116,31 @@ wy <- wyoming.sas7bdat %>% mutate(age_gr=factor(`_AGE_G`, labels=labs.age),
              alc_consum, wt, strata)
 ```
 
-#Sample Profiles by State and Year (Weighted)
-##Arizona
+#Sample Profiles by State and Year
 ```{r warning=FALSE, message=FALSE}
-library(tableone); library(survey); 
+library(tableone);
 
-svy.az <- svydesign(ids=~1, strata=~strata, weights=~wt, data=az) #set survey design
+#gather separate data frames for states as list
+dfs <- split(brfss.all, brfss.all$state) 
 
+#define sample profile variables
 sample.profile <- c("sex", "age_gr", "educ", "income", "race", "region",
                "gen_health", "ment_days", "phys_days",  
                "hvy_drink", "alc_consum", "smoker", 
                "rr_cognitive", "rr_atwork", "rr_emptsympt", "rr_physympt", "rr_hcare",
-               "rr_assignedrace") #Declare sample profile variables
+               "rr_assignedrace") 
 
-az.sample <- svyCreateTableOne(sample.profile, strata="year", data=svy.az, test=F) #Create demo table object
-print(az.sample)
-```
+#Unweighted sample profile tables by year, for each state 
+for (i in 1:seq_along(dfs)) {
+      brfss.sample[[i]] <- NULL
+      if (length(unique(dfs[[i]]$year)) > 1) {
+                  brfss.sample[[i]] <- CreateTableOne(sample.profile, strata="year",
+                                                         data=dfs[[i]], test=F)
+                  } else {
+                        brfss.sample[[i]] <- CreateTableOne(sample.profile,
+                                                               data=dfs[[i]], test=F)
+                        }
+}
 
-##Colorado (year==2004)
-```{r}
-svy.co <- svydesign(ids=~1, strata=~strata, weights=~wt, data=co) #set survey design
 
-co.sample <- svyCreateTableOne(sample.profile, data=svy.co, test=F) #Create demo table object
-print(co.sample)
-```
-
-##District of Columbia (Year==2004)
-```{r}
-svy.dc <- svydesign(ids=~1, strata=~strata, weights=~wt, data=dc) #set survey design
-
-dc.sample <- svyCreateTableOne(sample.profile, data=svy.dc, test=F) #Create demo table object
-print(dc.sample)
-```
-
-##Delaware
-```{r}
-svy.de <- svydesign(ids=~1, strata=~strata, weights=~wt, data=de) #set survey design
-
-de.sample <- svyCreateTableOne(sample.profile, strata="year", data=svy.de, test=F) #Create demo table object
-print(de.sample)
-```
-
-##Georgia (Year==2010)
-```{r}
-svy.ga <- svydesign(ids=~1, strata=~strata, weights=~wt, data=ga) #set survey design
-
-ga.sample <- svyCreateTableOne(sample.profile, data=svy.ga, test=F) #Create demo table object
-print(ga.sample)
-```
-
-##Indiana (Year==2009)
-```{r}
-svy.ind <- svydesign(ids=~1, strata=~strata, weights=~wt, data=ind) #set survey design
-
-ind.sample <- svyCreateTableOne(sample.profile, data=svy.ind, test=F) #Create demo table object
-print(ind.sample)
-```
-
-##Kentucky (Year==2010)
-```{r}
-svy.ke <- svydesign(ids=~1, strata=~strata, weights=~wt, data=ke) #set survey design
-
-ke.sample <- svyCreateTableOne(sample.profile, data=svy.ke, test=F) #Create demo table object
-print(ke.sample)
-```
-
-##Michigan (YEar==2006)
-```{r}
-svy.mi <- svydesign(ids=~1, strata=~strata, weights=~wt, data=mi) #set survey design
-
-mi.sample <- svyCreateTableOne(sample.profile, data=svy.mi, test=F) #Create demo table object
-print(mi.sample)
-```
-
-##Minnesota (Year==2014)
-```{r}
-svy.mn <- svydesign(ids=~1, strata=~strata, weights=~wt, data=mn) #set survey design
-
-mn.sample <- svyCreateTableOne(sample.profile, data=svy.mn, test=F) #Create demo table object
-print(mn.sample)
-```
-
-##Mississippi
-```{r}
-svy.ms <- svydesign(ids=~1, strata=~strata, weights=~wt, data=ms) #set survey design
-
-ms.sample <- svyCreateTableOne(sample.profile, strata="year", data=svy.ms, test=F) #Create demo table object
-print(ms.sample)
-```
-
-##Nebraska
-```{r}
-svy.ne <- svydesign(ids=~1, strata=~strata, weights=~wt, data=ne) #set survey design
-
-ne.sample <- svyCreateTableOne(sample.profile, strata="year", data=svy.ne, test=F) #Create demo table object
-print(ne.sample)
-```
-
-##New Mexico (Year==2014)
-```{r}
-svy.nm <- svydesign(ids=~1, strata=~strata, weights=~wt, data=nm) #set survey design
-
-nm.sample <- svyCreateTableOne(sample.profile, data=svy.nm, test=F) #Create demo table object
-print(nm.sample)
-```
-
-##Ohio (Year==2005)
-```{r}
-svy.oh <- svydesign(ids=~1, strata=~strata, weights=~wt, data=oh) #set survey design
-
-oh.sample <- svyCreateTableOne(sample.profile, data=svy.oh, test=F) #Create demo table object
-print(oh.sample)
-```
-
-##Rhode Island
-```{r}
-svy.ri <- svydesign(ids=~1, strata=~strata, weights=~wt, data=ri) #set survey design
-
-ri.sample <- svyCreateTableOne(sample.profile, strata="year", data=svy.ri, test=F) #Create demo table object
-print(ri.sample)
-```
-
-##South Carolina (Year==2004)
-```{r}
-svy.sc <- svydesign(ids=~1, strata=~strata, weights=~wt, data=sc) #set survey design
-
-sc.sample <- svyCreateTableOne(sample.profile, data=svy.sc, test=F) #Create demo table object
-print(sc.sample)
-```
-
-##Virginia (Year==2008)
-```{r}
-svy.va <- svydesign(ids=~1, strata=~strata, weights=~wt, data=va) #set survey design
-
-va.sample <- svyCreateTableOne(sample.profile, data=svy.va, test=F) #Create demo table object
-print(va.sample)
-```
-
-##Wisconsin
-```{r}
-svy.wi <- svydesign(ids=~1, strata=~strata, weights=~wt, data=wi) #set survey design
-
-wi.sample <- svyCreateTableOne(sample.profile, strata="year", data=svy.wi, test=F) #Create demo table object
-print(wi.sample)
-```
-
-##Wyoming (Year==2012)
-```{r}
-svy.wy <- svydesign(ids=~1, strata=~strata, weights=~wt, data=wy) #set survey design
-
-wy.sample <- svyCreateTableOne(sample.profile, data=svy.wy, test=F) #Create demo table object
-print(wy.sample)
 ```
