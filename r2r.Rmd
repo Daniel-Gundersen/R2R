@@ -1,14 +1,14 @@
 ---
-title: "R Notebook"
+title: "Reactions to race analyses"
 output:
-  html_document: default
   html_notebook: default
+  html_document: default
 ---
 
 #Reading and Tidying Data
 ```{r, message=FALSE, warning=FALSE}
 #load pacakges
-library(haven); library(tidyverse)
+library(haven); library(tidyverse); library(forcats)
 setwd("C:/Users/Daniel/Desktop/Konsulentarbeid/R2R/By_State")
 
 #reads data sets by state
@@ -105,7 +105,8 @@ brfss.all <- brfss.all %>% mutate(age_gr=factor(`_age_g`, labels=labs.age),
                                 sex=factor(sex, labels=labs.sex),
                                 smoker=factor(smoker, labels=labs.smoker),
                                 state=as.character(`_state`), psu=`_psu`,
-                                alc_consum=as.numeric(alcpmo), wt=as.numeric(`_finalwt`),
+                                alc_consum=as.numeric(alcpmo), 
+                                wt=as.numeric(`_finalwt`)*(n()/sum(as.numeric(`_finalwt`))),
                                 year=as.factor(iyearc), 
                                 region=as.character(region),
                                 strata=as.factor(`_ststr`)) %>%
@@ -118,7 +119,7 @@ brfss.all <- brfss.all %>% mutate(age_gr=factor(`_age_g`, labels=labs.age),
 
 #Sample Profiles by State and Year
 ```{r warning=FALSE, message=FALSE}
-library(tableone);
+library(tableone); library(survey)
 
 #gather separate data frames for states as list
 dfs <- split(brfss.all, brfss.all$state) 
@@ -130,17 +131,96 @@ sample.profile <- c("sex", "age_gr", "educ", "income", "race", "region",
                "rr_cognitive", "rr_atwork", "rr_emptsympt", "rr_physympt", "rr_hcare",
                "rr_assignedrace") 
 
-#Unweighted sample profile tables by year, for each state 
-for (i in 1:seq_along(dfs)) {
-      brfss.sample[[i]] <- NULL
-      if (length(unique(dfs[[i]]$year)) > 1) {
-                  brfss.sample[[i]] <- CreateTableOne(sample.profile, strata="year",
-                                                         data=dfs[[i]], test=F)
-                  } else {
-                        brfss.sample[[i]] <- CreateTableOne(sample.profile,
-                                                               data=dfs[[i]], test=F)
-                        }
-}
+#Unweighted sample profile table
+sample.descript <- CreateTableOne(sample.profile, data=brfss.all, test=F)
 
+#weighted sample profile table
+#creates yearBYstrata strata variable
+brfss.all <- brfss.all %>% mutate(strata_all = interaction(strata,  year, drop = TRUE ))
 
+#sets survey design
+brfss_svy <- svydesign(ids = ~ ID, strata = ~ strata_all, weights = ~ wt, data = brfss.all)
+
+#creates table
+svysample.descript <- svyCreateTableOne(sample.profile, data=brfss_svy, test=F)
 ```
+
+###Unweighted
+```{r}
+sample.descript
+```
+
+###Weighted
+```{r}
+svysample.descript
+```
+
+#Initial item and scale analysis
+```{r initial item analysis, message=FALSE, warning=FALSE}
+#recode rr variables
+rr.df <- brfss.all %>% dplyr::select(strata_all, wt, ID, contains("rr"), -rr_assignedrace) %>%
+      mutate(
+            hcare = fct_collapse(rr_hcare, NULL = c("No health care in past 12 months",
+                                                  "Only encountered people of the same race")),
+            physympt = fct_collapse(rr_physympt, NULL = c("Don't know/Not Sure", "Refused")), 
+            emptsympt = fct_collapse(rr_emptsympt, NULL = c("Don't know/Not Sure", "Refused")),
+            at_work = fct_collapse(rr_atwork, NULL = c("Only encountered people of the same race")),
+            cognitive = rr_cognitive
+      ) %>%
+      mutate(hcare=fct_relevel(hcare, "Worse than some races, better than others", after = 1),
+             at_work=fct_relevel(at_work, "Worse than some races, better than others", after = 1)) %>%
+      dplyr::select(-contains("rr"))  %>%
+      mutate_at(vars(hcare, physympt, emptsympt, at_work), fct_rev) %>%
+      mutate_at(vars(hcare, physympt, emptsympt, at_work, cognitive), as.ordered) 
+
+#fit models
+library(psych)
+#scale sampling weight to sample size
+rr.dfnum <- rr.df %>% mutate_all(as.numeric)
+
+mod1 <- fa(rr.dfnum[, 4:8], fm="minres", weight=rr.dfnum$wt, cor="poly")
+
+corPlot(mod1$r, upper=F, numbers=T, main="Polychoric correlations, weighted")
+
+c_alpha <- psych::alpha(mod1$r)
+```
+
+The figure shows the weighted polychoric correlations. Cognitive does not have large correlations with the remaining variables, so it is likely to not perform so well in subsequent psychometric modeling. We'll keep an eye on it and see if it is important in other ways (e.g. by having a distinct location/severity parameter).
+
+The scale reliability of `r round(c_alpha$total[,2], 3)` is decent, so is the average correlation of `r round(c_alpha$total[,4], 3)`
+
+```{r}
+round(c_alpha$total, 2)
+```
+
+As you can see below, this is would incrase to `r round(c_alpha$alpha.drop[5,2], 3)` with an average correlation of `r round(c_alpha$alpha.drop[5,4], 3)` if cognitive is dropped.
+
+```{r}
+round(c_alpha$alpha.drop, 3)
+```
+
+Not surprisingly, cognitive has a small item-total correlation of `r round(c_alpha$item.stats[5,2], 3)`
+
+```{r}
+round(c_alpha$item.stats, 3)
+```
+
+
+This general pattern is confirmed in the factor analysis, where cognitive has a smaller factor loading relative to the others.
+
+```{r}
+print(mod1)
+```
+
+
+# Some outstanding questions before proceeding:
+
+1. How does "other's perceive your race" fit into this measurement model? A key assumption of measurement models is that the latent construct **causes** the observed responses to the items.  There is a perception component to it, but I struggle to see how socially assigned race fits with the other items in a *common cause* model. I've left it out of the psychometric analysis for now. We should discuss whether it fits in the scale or is part of a structural model.
+
+2. Is "better than..." to "worse than other races" and ordinal or nominal scale? Specfically, can we assign an order to "worse than some races, better than others" vs. "The same as other races".  I'm treating it as ordinal for now, but I can see an argument for it not being ordinal.
+
+3. Treating "have only seen people same race" and "no health care in past 12 months" (and similar) items as missing. I've treated them as missing, but they can be modeled as a conditional category. I prefer the former, but we should discuss.
+
+4. Is the behavior of cognitive interpretable and expected?
+
+5. Modeling goals. We outlined the DIF analyses, but do you want to assess conditional reliablity and inspect "severity/location" parameters?
